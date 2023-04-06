@@ -81,11 +81,11 @@ private void add(E e, Object[] elementData, int s) {
 }
 ```
 
-`add()` 메서드는 `ArrayList`에 데이터를 추가하는 메서드이며 동일한 이름의 private 메서드가 존재합니다.   
+`add()` 메서드는 `ArrayList`에 데이터를 추가하는 메서드이며 동일한 이름의 private 메서드가 존재합니다.       
 여기서 `modCount` 변수는 `AbstractList`라는 상위 클래스에서 상속받은 변수로 `ArrayList`의 구조가 변경되었음을 나타냅니다.    
 
-`add()` 메서드 호출 시 저장할 데이터와 `elementData` 배열, `size`를 인자로 전달하고 있습니다.    
-여기서 `elementData` 배열의 길이와 `size`가 같다면 `grow()` 메서드를 호출합니다.
+`add()` 메서드 호출 시 저장할 데이터와 `elementData` 배열, `size`를 인자로 전달하고 있습니다.      
+여기서 `elementData` 배열의 길이와 `size`가 같다면 `grow()` 메서드를 호출합니다.          
 `elementData` 배열의 길이는 `ArrayList`의 용량을 가리키므로 이 값이 `size`와 같다면 배열에 더 이상 데이터를 저장할 수 없다는 뜻을 나타냅니다.
 
 ```java
@@ -114,10 +114,10 @@ private int newCapacity(int minCapacity) {
 }
 ```
 
-`grow()`는 내부에서 사용하는 private 메서드로 현재 `size`에 1을 더한 값을 오버로딩한 다른 `grow()` 메서드에 전달합니다.  
-`grow(int minCapacity)` 메서드는 `minCapacity`를 인자로 전달받아 새로운 배열을 생성하기 위해 `Arrays.copyOf()` 메서드를 호출합니다. 
-`Arrays.copyOf()` 메서드는 배열을 복사하는 유틸 메서드로 깊은 복사를 수행한 완전 새로운 배열을 생성하는데 용량을 늘리기 위해 두번째 인자로 배열의 크기를 전달받습니다.
-이 때 `newCapacity(int minCapacity)`를 호출하는데 이 메서드는 기존의 용량에서 1.5배를 더한 값을 새로운 용량으로 반환하며 기존의 `elementData`에 새롭게 할당하게 됩니다.
+`grow()`는 내부에서 사용하는 private 메서드로 현재 `size`에 1을 더한 값을 오버로딩한 다른 `grow()` 메서드에 전달합니다.             
+`grow(int minCapacity)` 메서드는 `minCapacity`를 인자로 전달받아 새로운 배열을 생성하기 위해 `Arrays.copyOf()` 메서드를 호출합니다.             
+`Arrays.copyOf()` 메서드는 배열을 복사하는 유틸 메서드로 깊은 복사를 수행한 완전 새로운 배열을 생성하는데 용량을 늘리기 위해 두번째 인자로 배열의 크기를 전달받습니다.                    
+이 때 `newCapacity(int minCapacity)`를 호출하는데 이 메서드는 기존의 용량에서 1.5배를 더한 값을 새로운 용량으로 반환하며 기존의 `elementData`에 새롭게 할당하게 됩니다.        
 
 ```java
 @HotSpotIntrinsicCandidate
@@ -137,7 +137,7 @@ public static native void arraycopy(Object src,  int  srcPos,
         int length);
 ```
 
-위 메서드는 `Arrays.copyOf()`의 코드인데 내부에서 native 코드로 작성된 `System.arraycopy()` 메서드를 호출하는 것을 확인할 수 있습니다. 
+위 메서드는 `Arrays.copyOf()`의 코드인데 내부에서 native 코드로 작성된 `System.arraycopy()` 메서드를 호출하는 것을 확인할 수 있습니다.    
 
-결국 `ArrayList`도 배열을 사용하고 있으며 개발자가 편하게 사용할 수 있도록 크기를 동적으로 조절하는 기능이 구현되어 있음을 알 수 있습니다.    
-배열을 복사하는 것은 native 코드로 구현되어 있으며 자세한 확인은 어렵지만 초기 용량을 적절하게 설정하지 않으면 성능에 영향을 줄 수 있다고 생각됩니다.    
+결국 `ArrayList`도 배열을 사용하고 있으며 개발자가 편하게 사용할 수 있도록 크기를 동적으로 조절하는 기능이 구현되어 있음을 알 수 있습니다.        
+배열을 복사하는 것은 native 코드로 구현되어 있으며 자세한 확인은 어렵지만 초기 용량을 적절하게 설정하지 않으면 성능에 영향을 줄 수 있다고 생각됩니다.       
