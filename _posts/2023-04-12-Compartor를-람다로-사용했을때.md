@@ -136,3 +136,6 @@ public void comparingAndReverse() {
 람다 식은 매개변수 타입이 지정된 명시적인 경우와 지정되지 않은 암시적인 경우로 나뉘고, 메서드 참조는 오버로딩이 없는 정확한 경우와 오버로딩이 있는 부정확한 경우로 나뉩니다.      
 제네릭 메서드를 호출할 때 람다 인수가 있는 경우에 타입 매개변수가 다른 인수에서 추론되지 않는 경우가 발생할 수 있습니다.          
 이런 경우에 명시적으로 타입을 제공해 주면 컴파일러가 타입을 추론할 수 있습니다.
+
+> 참고    
+> https://stackoverflow.com/questions/25172595/comparator-reversed-does-not-compile-using-lambda
