@@ -10,8 +10,7 @@ toc_sticky: true
 ---
 
 흔히 동시성 문제는 상태와 관련이 되어 있습니다.     
-각 스레드가 상태를 가진 객체를 공유하면 예상하지 못하는 결과가 발생하는 데 "불변 객체를 사용해라", "상태를 가진 싱글턴 객체는 위험하다" 라는 말들은 모두 공유 가능한 상태에 대한 위험함을 말합니다.      
-간단한 예제를 통해 동시성 문제에 대해 알아보겠습니다.
+멀티 스레드 환경에서 상태를 가진 객체를 사용할때 주의하지 않으면 예상치 못한 결과가 발생하는 데 간단한 예제를 통해 확인해보겠습니다.
 
 ### 예제
 
@@ -131,6 +130,7 @@ public class ThreadLocal<T> {
 
 set 메서드는 현재 스레드로 ThreadLocalMap을 가져오고, 맵이 존재하는 경우 해당 맵에 ThreadLocal 자신과 값을 저장합니다.     
 맵이 존재하지 않는 경우에는 맵을 생성하고 this와 값을 저장하도록 되어 있습니다.     
+this는 현재의 Thread를 가리키며 더 들어가보면 Thread의 ThreadLocal을 넘기게 됩니다.
 여기서 갑자기 ThreadLocalMap이 나오는데 이 클래스는 대체 뭘까요?
 
 ```java
@@ -183,12 +183,102 @@ map에서는 Entry를 가져온 후 Entry에 저장된 값을 반환하게 됩�
 구조를 간단하게 정리하면 다음과 같습니다.
 
 - ThreadLocal<T>
-- ThreadLocalMap<Thread, Entry>
+- ThreadLocalMap<ThreadLocal, Entry>
 - Entry<ThreadLocal, Object>
 
 ThreadLocal을 사용하면 ThreadLocal 클래스 하위 클래스의 새로운 인스턴스가 생성되고 이 인스턴스는 ThreadLocalMap에 저장됩니다.     
-ThreadLocalMap은 스레드를 키로 하고 Entry를 값으로 가지는 맵이며 Entry가 실질적인 데이터를 보관하는 객체입니다.      
+ThreadLocalMap은 ThreadLocal 인스턴스를 키로 하고 Entry를 값으로 가지는 맵이며 Entry가 실질적인 데이터를 보관하는 객체입니다.      
 또 Thread가 종료되면 ThreadLocal의 인스턴스도 모두 GC의 대상이 됩니다.
+
+### ThreadLocal을 제대로 사용하지 않는다면
+
+```java
+class User {
+    private String name;
+
+    public User(String name) {
+        this.name = name;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+}
+```
+
+하나 궁금한 게 있어서 새로 테스트를 해보기 위해 작성한 간단한 User 클래스입니다.
+
+```java
+class WrongThreadLocalTest {
+    @Test
+    void threadLocalTest() throws InterruptedException {
+        CountDownLatch countDownLatch = new CountDownLatch(2);
+        User originUser = new User("User");
+
+        Thread a = new Thread(() -> {
+            ThreadLocal<User> threadLocal = new ThreadLocal<>();
+            threadLocal.set(originUser);
+
+            User localUser = threadLocal.get();
+            localUser.setName("Thread A User");
+            threadLocal.set(localUser);
+
+            try {
+                sleep(1000);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+
+            System.out.println("Thread A ThreadLocalUser: " + threadLocal.get().getName());
+            System.out.println("Thread A OriginUser: " + originUser.getName());
+            System.out.println(originUser.equals(localUser));
+
+            countDownLatch.countDown();
+        });
+
+        Thread b = new Thread(() -> {
+            ThreadLocal<User> threadLocal = new ThreadLocal<>();
+            threadLocal.set(originUser);
+
+            User localUser = threadLocal.get();
+            localUser.setName("Thread B User");
+            threadLocal.set(localUser);
+
+            System.out.println("Thread B ThreadLocalUser: " + threadLocal.get().getName());
+            System.out.println("Thread B OriginUser: " + originUser.getName());
+            System.out.println(originUser.equals(localUser));
+
+            countDownLatch.countDown();
+        });
+
+        a.start();
+        sleep(100);
+        b.start();
+
+        countDownLatch.await();
+    }
+}
+```
+
+코드가 길어 파악이 어려울 수 있지만 하나씩 설명해보자면,
+
+1. 공유되는 객체인 User 인스턴스인 OriginUser를 생성합니다.
+2. Thread A에서 OriginUser를 ThreadLocal에 저장합니다.
+3. Thread A에서 ThreadLocal에 저장된 User 인스턴스를 가져와서 이름을 변경, 저장 후 sleep을 합니다.
+4. Thread B에서 OriginUser를 ThreadLocal에 저장합니다.
+5. Thread B에서 ThreadLocal에 저장된 User 인스턴스를 가져와서 이름을 변경한 후 다시 저장합니다.
+6. Thread A에서 ThreadLocal에 저장된 User 인스턴스와 OriginUser를 비교해보고 각각 저장된 상태를 호출합니다.
+7. Thread B에서 ThreadLocal에 저장된 User 인스턴스와 OriginUser를 비교해보고 각각 저장된 상태를 호출합니다.
+
+![image](https://user-images.githubusercontent.com/40778768/236253170-817b1f66-8d72-44b8-bb4f-63dad0e4cb08.png)
+
+결과는 둘 다 Thread B User로 출력되었는데, Thread B에서 변경한 내용이 Thread A에도 전파된 것입니다.      
+ThreadLocal에 저장되는 객체도 같은 참조값을 가지기 때문에 위와 같은 현상이 발생합니다.  
+때문에 ThreadLocal은 공유되는 객체를 각각 관리하기 위해서가 아니라, 스레드 별로 독립적인 상태를 관리하고 유지하기 위해 사용해야 합니다.
 
 ### 만약 스레드 풀을 사용한다면
 
@@ -201,9 +291,10 @@ ThreadLocalMap은 스레드를 키로 하고 Entry를 값으로 가지는 맵이
 
 때문에 항상 스레드를 새로 시작하거나 종료할 때 ThreadLocal의 remove 메서드를 호출해서 사용한 스레드의 ThreadLocal을 초기화해주는 것이 좋습니다.
 
-
 > 참고    
 > <https://www.baeldung.com/java-threadlocal>       
-> <https://blog.devgenius.io/a-deep-dive-into-java-threadlocal-9d0c2591a72f>        
+> <https://blog.devgenius.io/a-deep-dive-into-java-threadlocal-9d0c2591a72f>    
+> <https://www.inflearn.com/course/%EC%8A%A4%ED%94%84%EB%A7%81-%ED%95%B5%EC%8B%AC-%EC%9B%90%EB%A6%AC-%EA%B3%A0%EA%B8%89%ED%8E%B8>        
 > 자바 병렬 프로그래밍
 
+언제든 편하게 피드백을 주세요! 감사합니다!
