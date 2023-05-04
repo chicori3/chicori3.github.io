@@ -203,7 +203,7 @@ ThreadLocalMap은 스레드를 키로 하고 Entry를 값으로 가지는 맵이
 
 
 > 참고    
-> <https://www.baeldung.com/java-threadlocal>
-> <https://blog.devgenius.io/a-deep-dive-into-java-threadlocal-9d0c2591a72f>
+> <https://www.baeldung.com/java-threadlocal>       
+> <https://blog.devgenius.io/a-deep-dive-into-java-threadlocal-9d0c2591a72f>        
 > 자바 병렬 프로그래밍
 
