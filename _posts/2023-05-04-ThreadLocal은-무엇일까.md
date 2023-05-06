@@ -109,8 +109,8 @@ ThreadLocal은 어떻게 이런 결과를 만들어낼 수 있었을까요?
 
 ### ThreadLocal 알아보기
 
-ThreadLocal은 이름에서 유추할 수 있다시피 스레드의 지역 변수를 관리하는 클래스입니다.   
-ThreadLocal로 관리되는 변수는 스레드 간 격리되며 해당 스레드에서만 접근이 가능합니다.
+ThreadLocal은 이름에서 유추할 수 있다시피 스레드의 지역 변수를 생성하고 관리하는 클래스입니다.      
+ThreadLocal로 관리되는 변수는 스레드 간 격리되어 해당 스레드에서만 접근이 가능합니다.
 
 ThreadLocal에서 중요한 메서드는 get과 set이며 하나씩 살펴보겠습니다.
 
@@ -210,7 +210,8 @@ class User {
 }
 ```
 
-하나 궁금한 게 있어서 새로 테스트를 해보기 위해 작성한 간단한 User 클래스입니다.
+ThreadLocal에 공유 객체를 넘기면 어떻게 될까요?    
+테스트를 해보기 위해 작성한 간단한 User 클래스입니다.
 
 ```java
 class WrongThreadLocalTest {
@@ -278,7 +279,8 @@ class WrongThreadLocalTest {
 
 결과는 둘 다 Thread B User로 출력되었는데, Thread B에서 변경한 내용이 Thread A에도 전파된 것입니다.      
 ThreadLocal에 저장되는 객체도 같은 참조값을 가지기 때문에 위와 같은 현상이 발생합니다.  
-때문에 ThreadLocal은 공유되는 객체를 각각 관리하기 위해서가 아니라, 스레드 별로 독립적인 상태를 관리하고 유지하기 위해 사용해야 합니다.
+때문에 ThreadLocal은 공유되는 객체를 각각 관리하기 위해서도 아니고, 할 수도 없습니다.      
+스레드 별로 독립적인 상태를 다루기 위해서 사용하는 것이기 때문에 ThreadLocal에 공유 객체를 넘기면 안됩니다.  
 
 ### 만약 스레드 풀을 사용한다면
 
