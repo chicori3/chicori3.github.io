@@ -28,7 +28,7 @@ toc_sticky: true
 
 ### TransactionalEventListener
 
-<img width="999" alt="image" src="https://github.com/chicori3/number_baseball_server/assets/40778768/a13c5f35-a402-461a-82bb-ca4c5448cc5c"> {: width="750" .align-center}
+<img width="999" alt="image" src="https://github.com/chicori3/number_baseball_server/assets/40778768/a13c5f35-a402-461a-82bb-ca4c5448cc5c">
 
 Baeldung의 아티클을 살펴보면 트랜잭션 단계에 따라 이벤트를 처리할 수 있는 이벤트 리스너라고 소개하고 있습니다.      
 이벤트 리스너는 트랜잭션 단계에 따라 이벤트를 처리할 수 있으며, 트랜잭션 단계는 BEFORE_COMMIT, AFTER_COMMIT, AFTER_ROLLBACK, AFTER_COMPLETION이 존재합니다.     
@@ -117,7 +117,7 @@ class eventTest {
 
 게임을 수행하고 게임 기록이 저장되었는지 확인하는 간단한 테스트 코드를 실행해봤습니다.
 
-<img width="1041" alt="image" src="https://github.com/chicori3/number_baseball_server/assets/40778768/55880a66-2d3d-40ee-88cb-f30238fa5167"> {: width="400" .align-center}
+<img width="1041" alt="image" src="https://github.com/chicori3/number_baseball_server/assets/40778768/55880a66-2d3d-40ee-88cb-f30238fa5167">
 
 테스트는 실패합니다.
 
@@ -159,7 +159,7 @@ public enum TransactionPhase {
 
 스프링의 장점 중 하나는 추상화이며 Transaction을 관리하는 TransactionManager 또한 각각의 DB 접근 기술에 맞게 추상화되어 있습니다.
 
-<img width="1219" alt="image" src="https://github.com/chicori3/number_baseball_server/assets/40778768/2f566b3c-7ed6-42a3-b20a-6821c017cf7f"> {: width="400" .align-center}
+<img width="1219" alt="image" src="https://github.com/chicori3/number_baseball_server/assets/40778768/2f566b3c-7ed6-42a3-b20a-6821c017cf7f"> 
 
 위의 그림은 TransactionManager의 추상화를 보여주는 다이어그램입니다.  
 이 중 AbstractPlatformTransactionManager는 Spring 표준 트랜잭션 처리를 구현하는 추상 기본 클래스입니다.   
