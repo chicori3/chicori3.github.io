@@ -107,7 +107,48 @@ record Dto(
   <img width="600" alt="image" align="center" src="https://github.com/f-lab-edu/infrun/assets/40778768/325139bd-de75-4e14-a20e-072947f9c9af">
 </p>
 
-네 여기서 깨달았습니다.😅  
+네 여기서 뭔가 깨달은 느낌이었습니다.😅  
+
+### 검증해보자
+
+```java
+@Bean
+public SecurityFilterChain filterChain(final HttpSecurity http) throws Exception {
+    // TODO : 스프링 시큐리티 설정을 더 적절하게 작성해야 함
+    http
+        .csrf(AbstractHttpConfigurer::disable)
+
+        .exceptionHandling(handler -> handler
+            .authenticationEntryPoint(customAuthenticationEntryPoint)
+            .accessDeniedHandler(customAccessDeniedHandler))
+
+        .headers(headers -> headers.frameOptions(FrameOptionsConfig::sameOrigin))
+
+        .sessionManagement(session -> session
+            .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+
+        .authorizeHttpRequests(request -> request
+            .requestMatchers("/test/**").permitAll()
+            .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll() // 추가한 부분
+            .anyRequest().authenticated()
+        )
+
+        .apply(jwtSecurityConfig());
+
+    return http.build();
+    }
+```
+
+
+`DispatcherType`은 서블릿이 제공하는 Enum 타입으로 해당 요청이 어느 요청인지 구분하는 역할을 합니다.      
+제가 의심스러운 부분은 바로 스프링부트의 에러 페이지인데요.       
+저는 에러가 났을 때 이 에러에 대한 요청에 대한 권한 때문에 발생한 문제라고 가정했기 때문에 `DispatcherType.ERROR`를 추가했습니다.    
+
+<p align="center">
+  <img width="600" alt="image" src="https://github.com/f-lab-edu/infrun/assets/40778768/908adfc0-98bc-43c2-98dc-cdfd715378a9">
+</p>
+
+다행히 가정이 들어맞는 것을 확인할 수 있었습니다!
 
 ### 스프링 MVC의 에러 처리
 
@@ -117,35 +158,13 @@ record Dto(
 
 스프링 MVC는 기본적으로 처리가 되지 않은 에러가 발생하면 `/error` 뷰를 사용자에게 반환하기 위해 내부적으로 다시 요청을 하게 됩니다.    
 하지만 제 Spring Security 설정에는 `/test` 경로 이외의 요청은 모두 인증이 필요하도록 설정이 되어 있었습니다.    
-때문에 사실 서버에서는 제대로 400 에러가 발생했지만, 내부적으로 다시 요청을 하게 되면서 인증이 필요한 요청이 되어버린 것입니다.  
+때문에 사실 서버에서는 제대로 400 에러가 발생했지만, 내부적으로 다시 요청을 하게 되면서 인증이 필요한 요청이 되어버린 것입니다.
 
-### 해결해보기
+### 직렬화는 왜 실패했을까?
 
-```java
-@Bean
-public WebSecurityCustomizer webSecurityCustomizer() {
-    return web -> web.ignoring()
-        .dispatcherTypeMatchers(DispatcherType.ERROR)
-        .requestMatchers(PathRequest.toStaticResources().atCommonLocations())
-        .requestMatchers(PathRequest.toH2Console());
-}
-```
-
-저는 `DispatcherType.ERROR`를 무시하도록 설정했습니다.    
-위와 같이 설정한 이유는 
-1. 프로젝트 서버는 데이터로 통신을 하기 위한 서버입니다.
-2. 서버에서 예외를 핸들링하기 위해 `ControllerAdvice`를 사용하고 있습니다.
-
-<p align="center">
-  <img width="600" alt="image" src="https://github.com/f-lab-edu/infrun/assets/40778768/908adfc0-98bc-43c2-98dc-cdfd715378a9">
-</p>
-
-이제는 예외가 발생해도 인증, 권한 관련 에러가 발생하지 않습니다.
-
-### 근데 왜 직렬화가 안됐을까?
-
-이전에 발생한 예외의 원인은 정수 타입에 변환할 수 없는 문자열을 넣었기 때문입니다.     
-요청 데이터는 hibernate validator를 사용해서 검증을 하고 있습니다.     
+마무리하기 전에 한 가지 더 궁금한 점이 있었습니다.   
+이번 이슈는 정수 타입에 변환할 수 없는 문자열을 넣었고, 이에 대한 검증을 확인해보고자 했는데 왜 권한 관련 에러가 발생하는 지에 대한 원인 파악이었습니다.              
+저희는 요청 데이터의 유효성 검사를 hibernate validator를 사용해서 검증을 하고 있습니다.     
 
 팀원분도 사실 해당 검증을 통한 예외가 반환되기를 바랐을 것이고, 저도 그렇게 생각했습니다.
 이쯤에서 로그를 살펴보면
