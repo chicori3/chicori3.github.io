@@ -18,9 +18,105 @@ toc_sticky: true
 - `CartItems` 일급 컬렉션은 장바구니 아이템을 리스트로 가지며 `@OneToMany`가 설정되어 있습니다.
 - 주문을 생성하기 위해 장바구니를 조회할 때 장바구니 아이템 리스트를 함께 조회하고자 합니다.
 
-그럼 제가 어떻게 문제를 해결했는지 코드를 보면서 알아보겠습니다.
+우선 제가 왜 일급 컬렉션을 사용했는지 알아볼까요? 
 
-> 일급 컬렉션에 대한 자세한 설명은 향로님의 [일급 컬렉션](https://jojoldu.tistory.com/412) 글을 참고해주세요.
+### 일급 컬렉션
+
+소트웍스 앤솔로지라는 책에서 객체지향 생활체조를 소개하고 있습니다.       
+객체지향 생활체조는 보다 객체지향적인 코드를 작성하기 위한 가이드라인으로 총 9가지의 원칙을 제시하는데 그 원칙은 아래와 같습니다.   
+
+- 규칙 1: 한 메서드에 오직 한 단계의 들여쓰기(indent)만 한다.
+- 규칙 2: else 예약어를 쓰지 않는다.
+- 규칙 3: 모든 원시값과 문자열을 포장한다.
+- 규칙 4: 한 줄에 점을 하나만 찍는다.
+- 규칙 5: 줄여쓰지 않는다(축약 금지).
+- 규칙 6: 모든 엔티티를 작게 유지한다.
+- 규칙 7: 3개 이상의 인스턴스 변수를 가진 클래스를 쓰지 않는다.
+- 규칙 8: 일급 콜렉션을 쓴다.
+- 규칙 9: 게터/세터/프로퍼티를 쓰지 않는다.
+
+다른 책이나 강의 또는 어디선가라도 몇 가지 원칙은 들어보셨을 것 같습니다.
+이 중 규칙 8번인 일급 컬렉션을 쓴다라는 내용이 있는데, 왜 일급 컬렉션을 쓰라고 할까요?     
+
+```java
+public class BaseballGame {
+    public List<Integer> ballNumbers = new ArrayList<>();
+
+    public BaseballGame(final List<Integer> ballNumbers) {
+        validateSize(ballNumbers);
+        validateDuplicate(ballNumbers);
+        this.ballNumbers = ballNumbers;
+    }
+
+    private void validateSize(final List<Integer> ballNumbers) {
+        if (ballNumbers.size() != 3) {
+            throw new IllegalArgumentException("숫자는 3개만 입력 가능합니다.");
+        }
+    }
+
+    private void validateDuplicate(final List<Integer> ballNumbers) {
+        if (ballNumbers.stream().distinct().count() != 3) {
+            throw new IllegalArgumentException("중복된 숫자는 입력할 수 없습니다.");
+        }
+    }
+    
+    ...
+}
+```
+
+숫자야구 게임을 예제로 작성해봤습니다.   
+숫자야구 게임은 아래와 같은 규칙이 있습니다.
+
+- 0 ~ 9까지의 숫자를 입력할 수 있습니다.
+- 숫자는 3개를 입력해야 합니다.
+- 중복된 숫자는 입력할 수 없습니다.
+
+위와 같은 조건이 있기 때문에 검증 로직이 필요한데, 이를 `BaseballGame` 객체가 처리하고 있습니다.      
+
+해당 검증 로직을 `BaseballGame`이라는 객체가 처리하는 것이 적절할까요?         
+물론 지금 상황에서는 `BaseballGame`이라는 객체가 처리하는 것도 나쁘지 않다고 생각합니다.    
+다만 저 `List<Integer>`가 다른 곳에서도 사용된다면 똑같은 검증 로직을 다른 객체에서도 사용해야 할 것이며 중복된 코드가 발생할 수 있고, `List<Integer>`가 무엇을 위한 값인지 파악하기도 쉽지 않을 것입니다.  
+
+저는 객체지향의 핵심은 메시징과 캡슐화, 동적 바인딩이라는 앨런 케이의 말을 따라 가능한 실천하려고 합니다.          
+그러기 위해서는 객체가 메시지를 받을 수 있어야 하고, 자신의 상태는 온전히 자신만이 관리할 수 있어야 합니다.
+그럼 `List<Integer>`처럼 단순 컬렉션이 아닌 고유한 메서드를 가지고 메시지를 수신해 본인의 상태를 처리할 수 있는 자료구조가 필요한데 이 때 사용할 수 있는 것이 일급 컬렉션입니다.
+
+```java
+public class BaseballNumbers {
+    public List<Integer> ballNumbers = new ArrayList<>();
+
+    public BaseballNumbers(final List<Integer> ballNumbers) {
+        validateSize(ballNumbers);
+        validateDuplicate(ballNumbers);
+        this.ballNumbers = ballNumbers;
+    }
+
+    private void validateSize(final List<Integer> ballNumbers) {
+        if (ballNumbers.size() != 3) {
+            throw new IllegalArgumentException("숫자는 3개만 입력 가능합니다.");
+        }
+    }
+
+    private void validateDuplicate(final List<Integer> ballNumbers) {
+        if (ballNumbers.stream().distinct().count() != 3) {
+            throw new IllegalArgumentException("중복된 숫자는 입력할 수 없습니다.");
+        }
+    }
+}
+```
+
+일급 컬렉션은 위와 같이 컬렉션을 래핑하는 객체입니다.      
+거창한 이름과는 다르게 작성하기도 쉽고 다양한 장점이 있습니다.     
+
+- 상태와 행위를 하나의 객체가 관리할 수 있습니다.
+- 재사용이 가능합니다.
+- 이름을 가질 수 있습니다.
+- 불변성을 보장하도록 작성할 수 있습니다.
+
+위와 같은 이유들로 저는 일급 컬렉션을 사용했습니다.       
+그럼 이제부터 아래 프로젝트의 예제 코드를 보며 어떤 문제가 발생했고, 어떻게 해결했는지 알아보겠습니다.  
+
+> 일급 컬렉션에 대해 더 알고 싶으시다면 [향로님의 블로그](https://jojoldu.tistory.com/412)를 참고해주세요.
 
 ### 예제 코드
 
